@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .markdown-body {
+    @apply text-gray-800 leading-relaxed;
+  }
+  .markdown-body h1 {
+    @apply text-3xl font-bold mt-8 mb-4 text-gray-900;
+  }
+  .markdown-body h2 {
+    @apply text-2xl font-bold mt-6 mb-3 text-gray-900;
+  }
+  .markdown-body h3 {
+    @apply text-xl font-semibold mt-5 mb-2 text-gray-900;
+  }
+  .markdown-body p {
+    @apply mb-4;
+  }
+  .markdown-body ul {
+    @apply list-disc list-inside mb-4 space-y-1;
+  }
+  .markdown-body ol {
+    @apply list-decimal list-inside mb-4 space-y-1;
+  }
+  .markdown-body li {
+    @apply ml-4;
+  }
+  .markdown-body strong {
+    @apply font-semibold text-gray-900;
+  }
+  .markdown-body a {
+    @apply text-emerald-600 hover:underline;
+  }
+  .markdown-body blockquote {
+    @apply border-l-4 border-gray-300 pl-4 italic text-gray-600 my-4;
+  }
+  .markdown-body code {
+    @apply bg-gray-100 text-pink-600 px-1.5 py-0.5 rounded text-sm font-mono;
+  }
+  .markdown-body pre {
+    @apply bg-gray-900 text-gray-100 p-4 rounded-xl overflow-x-auto mb-4;
+  }
+  .markdown-body pre code {
+    @apply bg-transparent text-inherit p-0 rounded-none text-sm;
+  }
+}
+
+@media print {
+  /* Hide standard application structures */
+  #root > :not(.printing-resume),
+  header,
+  aside,
+  nav,
+  button,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Support body printing override class */
+  body.printing-resume * {
+    visibility: hidden !important;
+  }
+  body.printing-resume .printable-resume-area,
+  body.printing-resume .printable-resume-area * {
+    visibility: visible !important;
+  }
+  body.printing-resume .printable-resume-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 1.5in !important; /* Perfect standard margin for resumes */
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+  }
+}
+

@@ -1,0 +1,6 @@
+{
+  "name": "PrepAI",
+  "description": "An AI-powered platform for student placement and training, featuring interview practice, resume analysis, ATS resume building, and project roadmap generation.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,175 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 0. Global Safety Net (MANDATORY)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isAuthenticated() && request.auth.token.email_verified == true;
+    }
+    
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        (request.auth.token.email == "engineeringstudies5@gmail.com" && request.auth.token.email_verified == true) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'admin')
+      );
+    }
+    
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidTimestamp(ts) {
+      return ts is string && ts.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
+    }
+
+    function isValidDate(date) {
+      return date is string && date.matches("^\\d{4}-\\d{2}-\\d{2}$");
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'lastLogin', 'role']) &&
+             data.uid == request.auth.uid &&
+             isValidEmail(data.email) &&
+             isValidTimestamp(data.lastLogin) &&
+             data.role in ['student', 'mentor', 'admin', 'employee'] &&
+             (data.get('displayName', '') is string) &&
+             (data.get('photoURL', '') is string) &&
+             (data.get('subscriptionStatus', 'inactive') in ['active', 'inactive']) &&
+             (data.get('linkedIn', '') is string) &&
+             (data.get('skills', []) is list) &&
+             (data.get('journey', []) is list);
+    }
+
+    function isValidAnalysis(data, targetUid) {
+      return data.keys().hasAll(['userId', 'fileName', 'result', 'timestamp']) &&
+             data.userId == targetUid &&
+             data.userId == request.auth.uid &&
+             data.fileName is string && data.fileName.size() < 255 &&
+             data.result is string && data.result.size() < 100000 &&
+             isValidTimestamp(data.timestamp);
+    }
+
+    function isValidJobApplication(data) {
+      let baseValid = data.keys().hasAll(['userId', 'company', 'role', 'location', 'status', 'date']) &&
+             data.userId == request.auth.uid &&
+             data.company is string && data.company.size() > 0 && data.company.size() < 100 &&
+             data.role is string && data.role.size() > 0 && data.role.size() < 100 &&
+             data.location is string && data.location.size() < 100 &&
+             data.status in ['applied', 'interviewing', 'offered', 'rejected'] &&
+             isValidDate(data.date);
+      
+      let dueDateValid = !('dueDate' in data) || isValidDate(data.dueDate);
+      
+      return baseValid && dueDateValid;
+    }
+
+    function isValidResumeDraft(data, targetUid) {
+      return data.keys().hasAll(['userId', 'updatedAt']) &&
+             data.userId == targetUid &&
+             data.userId == request.auth.uid &&
+             isValidTimestamp(data.updatedAt) &&
+             (!('name' in data) || data.name is string) &&
+             (!('email' in data) || data.email is string) &&
+             (!('phone' in data) || data.phone is string) &&
+             (!('summary' in data) || (data.summary is string && data.summary.size() < 50000)) &&
+             (!('experience' in data) || (data.experience is string && data.experience.size() < 100000)) &&
+             (!('education' in data) || (data.education is string && data.education.size() < 50000)) &&
+             (!('skills' in data) || (data.skills is string && data.skills.size() < 50000)) &&
+             (!('projects' in data) || (data.projects is string && data.projects.size() < 100000)) &&
+             (!('template' in data) || (data.template is string && data.template.size() < 100)) &&
+             (!('result' in data) || (data.result is string && data.result.size() < 500000));
+    }
+
+    function isValidMentorshipRequest(data) {
+      return data.keys().hasAll(['studentId', 'mentorId', 'status', 'createdAt']) &&
+             data.studentId == request.auth.uid &&
+             data.status in ['pending', 'accepted', 'rejected'] &&
+             isValidTimestamp(data.createdAt) &&
+             (!('studentName' in data) || data.studentName is string) &&
+             (!('mentorName' in data) || data.mentorName is string) &&
+             (!('message' in data) || data.message is string);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin() || (isAuthenticated() && resource.data.role == 'mentor');
+      allow list: if isAuthenticated() && resource.data.role == 'mentor';
+      
+      allow create: if isVerified() && isOwner(userId) && isValidUser(request.resource.data) && 
+                    (request.resource.data.role in ['student', 'employee'] || isAdmin());
+      
+      allow update: if isVerified() && isOwner(userId) && (
+        isAdmin() || (
+          isValidUser(request.resource.data) && 
+          request.resource.data.role == resource.data.role &&
+          request.resource.data.diff(resource.data).affectedKeys().hasAny(['lastLogin', 'displayName', 'photoURL', 'subscriptionStatus', 'linkedIn', 'skills', 'journey'])
+        )
+      );
+      
+      match /analyses/{analysisId} {
+        allow read: if isOwner(userId);
+        allow create: if isVerified() && isOwner(userId) && isValidAnalysis(request.resource.data, userId);
+        allow update: if false; 
+        allow delete: if isOwner(userId);
+      }
+    }
+
+    match /applications/{applicationId} {
+      allow list: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow get: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow create: if isVerified() && isValidJobApplication(request.resource.data);
+      allow update: if isVerified() && isDocOwner() && isValidJobApplication(request.resource.data);
+      allow delete: if isVerified() && isDocOwner();
+    }
+
+    match /resumes/{userId} {
+      allow read: if isAuthenticated() && isOwner(userId);
+      allow create: if isVerified() && isOwner(userId) && isValidResumeDraft(request.resource.data, userId);
+      allow update: if isVerified() && isOwner(userId) && isValidResumeDraft(request.resource.data, userId);
+      allow delete: if isVerified() && isOwner(userId);
+    }
+
+    match /mentorshipRequests/{requestId} {
+      allow read: if isAuthenticated() && (resource == null || resource.data.studentId == request.auth.uid || resource.data.mentorId == request.auth.uid);
+      allow create: if isVerified() && isValidMentorshipRequest(request.resource.data);
+      allow update: if isVerified() && (
+        (resource.data.studentId == request.auth.uid && request.resource.data.status == resource.data.status && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['message'])) ||
+        (resource.data.mentorId == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']))
+      );
+      allow delete: if false;
+    }
+  }
+}
+

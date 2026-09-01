@@ -1,0 +1,112 @@
+{
+  "entities": {
+    "user": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "linkedIn": { "type": "string", "format": "uri" },
+        "role": { "type": "string", "enum": ["student", "mentor", "admin", "employee"] },
+        "subscriptionStatus": { "type": "string", "enum": ["active", "inactive"] },
+        "lastLogin": { "type": "string", "format": "date-time" },
+        "skills": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "journey": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
+      },
+      "required": ["uid", "email", "role", "lastLogin"]
+    },
+    "resumeAnalysis": {
+      "title": "Resume Analysis",
+      "description": "Stored resume analysis results",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "fileName": { "type": "string" },
+        "result": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "result", "timestamp"]
+    },
+    "jobApplication": {
+      "title": "Job Application",
+      "description": "Tracked job application",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "company": { "type": "string" },
+        "role": { "type": "string" },
+        "location": { "type": "string" },
+        "status": { "type": "string", "enum": ["applied", "interviewing", "offered", "rejected"] },
+        "date": { "type": "string", "format": "date" },
+        "dueDate": { "type": "string", "format": "date" }
+      },
+      "required": ["userId", "company", "role", "status", "date"]
+    },
+    "resumeDraft": {
+      "title": "Resume Draft",
+      "description": "Autosaved resume builder form data and generated result",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "summary": { "type": "string" },
+        "experience": { "type": "string" },
+        "education": { "type": "string" },
+        "skills": { "type": "string" },
+        "projects": { "type": "string" },
+        "template": { "type": "string" },
+        "result": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "updatedAt"]
+    },
+    "mentorshipRequest": {
+      "title": "Mentorship Request",
+      "description": "Request for mentorship from student to mentor",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "mentorId": { "type": "string" },
+        "mentorName": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "rejected"] },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["studentId", "mentorId", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "user",
+      "description": "User profiles"
+    },
+    "/users/{userId}/analyses/{analysisId}": {
+      "schema": "resumeAnalysis",
+      "description": "User's resume analysis history"
+    },
+    "/applications/{applicationId}": {
+      "schema": "jobApplication",
+      "description": "Job applications tracked by users"
+    },
+    "/resumes/{userId}": {
+      "schema": "resumeDraft",
+      "description": "Autosaved resume drafts per user"
+    },
+    "/mentorshipRequests/{requestId}": {
+      "schema": "mentorshipRequest",
+      "description": "Mentorship requests"
+    }
+  }
+}
