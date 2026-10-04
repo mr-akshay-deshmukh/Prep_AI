@@ -337,5 +337,5 @@ Distributed under the **MIT License**. See [`LICENSE`](./LICENSE) for more infor
 ---
 
 <div align="center">
-  <sub>Built with ❤️ for aspiring engineers worldwide • Powered by Google Gemini & React</sub>
+  <sub>Built with ❤️ for aspiring engineers</sub>
 </div>
