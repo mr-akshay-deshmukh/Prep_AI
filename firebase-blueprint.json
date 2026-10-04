@@ -20,6 +20,15 @@
         "journey": {
           "type": "array",
           "items": { "type": "object" }
+        },
+        "streak": {
+          "type": "object",
+          "properties": {
+            "currentStreak": { "type": "number" },
+            "longestStreak": { "type": "number" },
+            "lastActiveDate": { "type": "string" },
+            "activeDates": { "type": "array" }
+          }
         }
       },
       "required": ["uid", "email", "role", "lastLogin"]

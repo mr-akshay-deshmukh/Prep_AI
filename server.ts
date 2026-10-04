@@ -30,6 +30,42 @@ function getAI(req?: express.Request): GoogleGenAI {
   });
 }
 
+function formatGeminiError(error: any): { status: number, message: string } {
+  const errMsg = error?.message || String(error);
+  
+  if (errMsg.includes('API key not valid') || errMsg.includes('API_KEY_INVALID')) {
+    return {
+      status: 401,
+      message: 'Gemini API key is invalid. Please enter a valid Gemini API key in the API Configuration menu in the sidebar or under Settings > Secrets.'
+    };
+  }
+  if (errMsg.includes('Please configure a valid Gemini API key')) {
+    return {
+      status: 401,
+      message: errMsg
+    };
+  }
+  if (errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('quota') || errMsg.includes('429')) {
+    return {
+      status: 429,
+      message: 'Gemini API quota exceeded. Please wait a moment or provide your own API key in the API Configuration panel.'
+    };
+  }
+  
+  // Try to parse nested json message if any
+  try {
+    const jsonMatch = errMsg.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      if (parsed.error?.message) {
+        return { status: 400, message: parsed.error.message };
+      }
+    }
+  } catch (_) {}
+
+  return { status: 500, message: errMsg };
+}
+
 // API Routes
 
 app.get("/api/config/status", (req, res) => {
@@ -38,9 +74,26 @@ app.get("/api/config/status", (req, res) => {
   res.json({ hasServerKey });
 });
 
+app.post("/api/config/test-key", async (req, res) => {
+  try {
+    const response = await getAI(req).models.generateContent({
+      model: "gemini-3.7-flash",
+      contents: [{ role: "user", parts: [{ text: "Hello" }] }],
+    });
+    if (response?.text) {
+      res.json({ ok: true, message: "API key is valid and connected successfully!" });
+    } else {
+      res.status(500).json({ ok: false, error: "Empty response from Gemini API" });
+    }
+  } catch (error: any) {
+    const formatted = formatGeminiError(error);
+    res.status(formatted.status).json({ ok: false, error: formatted.message });
+  }
+});
+
 app.post("/api/gemini/text", async (req, res) => {
   try {
-    const { prompt, systemInstruction, model = "gemini-3-flash-preview" } = req.body;
+    const { prompt, systemInstruction, model = "gemini-3.7-flash" } = req.body;
     const response = await getAI(req).models.generateContent({
       model: model as any,
       contents: [{ role: "user", parts: [{ text: prompt }] }],
@@ -49,7 +102,8 @@ app.post("/api/gemini/text", async (req, res) => {
     res.json({ text: response.text });
   } catch (error: any) {
     console.error("Error in /api/gemini/text:", error);
-    res.status(500).json({ error: error.message });
+    const formatted = formatGeminiError(error);
+    res.status(formatted.status).json({ error: formatted.message });
   }
 });
 
@@ -57,7 +111,7 @@ app.post("/api/gemini/feedback", async (req, res) => {
   try {
     const { prompt } = req.body;
     const response = await getAI(req).models.generateContent({
-      model: "gemini-3-flash-preview" as any,
+      model: "gemini-3.7-flash" as any,
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       config: {
         systemInstruction: "You are an expert interview coach acting as a Senior Hiring Manager. Analyze the user's response to an interview question. Provide feedback in a strict JSON format focusing on Content, Tone, Clarity, and specific common mistakes like filler words, STAR method usage, and example clarity.",
@@ -132,7 +186,8 @@ app.post("/api/gemini/feedback", async (req, res) => {
     res.json({ feedback });
   } catch (error: any) {
     console.error("Error in /api/gemini/feedback:", error);
-    res.status(500).json({ error: error.message });
+    const formatted = formatGeminiError(error);
+    res.status(formatted.status).json({ error: formatted.message });
   }
 });
 
@@ -140,7 +195,7 @@ app.post("/api/gemini/resume", async (req, res) => {
   try {
     const { fileBase64, mimeType } = req.body;
     const response = await getAI(req).models.generateContent({
-      model: "gemini-3-flash-preview" as any,
+      model: "gemini-3.7-flash" as any,
       contents: [
         {
           role: "user",
@@ -159,13 +214,14 @@ app.post("/api/gemini/resume", async (req, res) => {
     res.json({ text: response.text });
   } catch (error: any) {
     console.error("Error in /api/gemini/resume:", error);
-    res.status(500).json({ error: error.message });
+    const formatted = formatGeminiError(error);
+    res.status(formatted.status).json({ error: formatted.message });
   }
 });
 
 app.post("/api/gemini/chat", async (req, res) => {
   try {
-    const { messages, systemInstruction, model = "gemini-3-flash-preview" } = req.body;
+    const { messages, systemInstruction, model = "gemini-3.7-flash" } = req.body;
     const contents = messages.map((m: any) => ({
       role: m.role,
       parts: [{ text: m.content || m.text }]
@@ -179,7 +235,8 @@ app.post("/api/gemini/chat", async (req, res) => {
     res.json({ text: response.text });
   } catch (error: any) {
     console.error("Error in /api/gemini/chat:", error);
-    res.status(500).json({ error: error.message });
+    const formatted = formatGeminiError(error);
+    res.status(formatted.status).json({ error: formatted.message });
   }
 });
 
@@ -187,7 +244,7 @@ app.post("/api/gemini/image", async (req, res) => {
   try {
     const { prompt, size = "1K" } = req.body;
     const response = await getAI(req).models.generateContent({
-      model: "gemini-3.1-flash-image-preview",
+      model: "gemini-3.1-flash-lite-image",
       contents: {
         parts: [{ text: prompt }]
       },
@@ -210,7 +267,8 @@ app.post("/api/gemini/image", async (req, res) => {
     res.json({ data });
   } catch (error: any) {
     console.error("Error in /api/gemini/image:", error);
-    res.status(500).json({ error: error.message });
+    const formatted = formatGeminiError(error);
+    res.status(formatted.status).json({ error: formatted.message });
   }
 });
 

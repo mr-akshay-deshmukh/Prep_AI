@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { X, Key, CheckCircle2, AlertCircle, ExternalLink, HelpCircle } from 'lucide-react';
+import { X, Key, CheckCircle2, AlertCircle, ExternalLink, HelpCircle, Loader2, Sparkles } from 'lucide-react';
+import { testGeminiApiKey } from '../lib/gemini';
 
 interface ApiSettingsModalProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ export function ApiSettingsModal({ isOpen, onClose }: ApiSettingsModalProps) {
   const [hasServerKey, setHasServerKey] = useState<boolean | null>(null);
   const [localKey, setLocalKey] = useState("");
   const [savedKey, setSavedKey] = useState<string | null>(null);
+  const [isTesting, setIsTesting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
   useEffect(() => {
@@ -57,6 +59,19 @@ export function ApiSettingsModal({ isOpen, onClose }: ApiSettingsModalProps) {
       text: 'Custom API Key cleared. The app will now fallback to the server API Key.' 
     });
     setTimeout(() => setMessage(null), 3000);
+  };
+
+  const handleTestConnection = async () => {
+    setIsTesting(true);
+    setMessage(null);
+    const keyToTest = localKey.trim() || undefined;
+    const res = await testGeminiApiKey(keyToTest);
+    setIsTesting(false);
+    if (res.ok) {
+      setMessage({ type: 'success', text: res.message || 'API connection test succeeded! Gemini is ready.' });
+    } else {
+      setMessage({ type: 'error', text: res.error || 'Failed to connect to Gemini with the active key.' });
+    }
   };
 
   const getStatus = () => {
@@ -117,7 +132,7 @@ export function ApiSettingsModal({ isOpen, onClose }: ApiSettingsModalProps) {
         <div className="p-6 overflow-y-auto space-y-6 flex-1">
           {/* Explanation */}
           <p className="text-sm text-gray-600 leading-relaxed">
-            PrepAI features like the <strong className="text-gray-900">AI Mentor, Interview Practice, and Resume Analyzer</strong> are fully powered by Google Gemini. For the application to function perfectly, a Gemini API Key is required.
+            PrepAI features like the <strong className="text-gray-900">AI Mentor, Interview Practice, and Resume Analyzer</strong> are fully powered by Google Gemini. For the application to function reliably, a valid Gemini API Key is required.
           </p>
 
           {/* Connection Status Panel */}
@@ -151,19 +166,28 @@ export function ApiSettingsModal({ isOpen, onClose }: ApiSettingsModalProps) {
                   onClick={handleClear}
                   className="px-4 py-3 bg-red-50 text-red-600 border border-red-100 font-bold rounded-xl text-sm hover:bg-red-100 transition whitespace-nowrap"
                 >
-                  Clear Key
+                  Clear
                 </button>
               )}
               <button
                 onClick={handleSave}
                 className="px-5 py-3 bg-emerald-600 text-white font-bold rounded-xl text-sm hover:bg-emerald-700 transition shadow-md whitespace-nowrap"
               >
-                Save Key
+                Save
               </button>
             </div>
-            <p className="text-xs text-gray-400">
-              Your API key is processed in memory on our secure server proxies and is never stored permanently.
-            </p>
+            <div className="flex items-center justify-between pt-1">
+              <button
+                type="button"
+                onClick={handleTestConnection}
+                disabled={isTesting}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition disabled:opacity-50"
+              >
+                {isTesting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-emerald-600" />}
+                {isTesting ? "Testing key..." : "Test Connection"}
+              </button>
+              <span className="text-[11px] text-gray-400">Processed securely in memory</span>
+            </div>
           </div>
 
           {/* Feedback Messages */}

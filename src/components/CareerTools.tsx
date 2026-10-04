@@ -34,11 +34,11 @@ export function CareerTools() {
     }
 
     try {
-      const response = await generateText(input, systemInstructions, "gemini-3-flash-preview");
+      const response = await generateText(input, systemInstructions, "gemini-3.7-flash");
       setResult(response || '');
-    } catch (error) {
+    } catch (error: any) {
       console.error("Tool error:", error);
-      setResult("Failed to generate content. Please try again.");
+      setResult(`Failed to generate content: ${error?.message || 'Please check your Gemini API key in API Configuration.'}`);
     } finally {
       setIsLoading(false);
     }

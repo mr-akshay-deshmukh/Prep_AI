@@ -1,8 +1,9 @@
-import { Briefcase, FileText, LayoutDashboard, MessageSquare, Code, LogOut, User as UserIcon, MessageCircle, Sparkles, Kanban, Star, Compass, Lightbulb, Key } from 'lucide-react';
+import { Briefcase, FileText, LayoutDashboard, MessageSquare, Code, LogOut, User as UserIcon, MessageCircle, Sparkles, Kanban, Star, Compass, Lightbulb, Key, Flame } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { logout } from '../lib/firebase';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ApiSettingsModal } from './ApiSettingsModal';
+import { getStreakData } from '../lib/streak';
 
 interface SidebarProps {
   activeTab: string;
@@ -13,6 +14,14 @@ interface SidebarProps {
 
 export function Sidebar({ activeTab, setActiveTab, user, role }: SidebarProps) {
   const [isApiModalOpen, setIsApiModalOpen] = useState(false);
+  const [streakCount, setStreakCount] = useState<number>(0);
+
+  useEffect(() => {
+    getStreakData(user).then((data) => {
+      setStreakCount(data.currentStreak);
+    }).catch(() => {});
+  }, [user, activeTab]);
+
   const navItems = [
     { id: 'home', label: 'Dashboard', icon: LayoutDashboard, roles: ['student', 'mentor', 'admin', 'employee'] },
     { id: 'chat', label: 'AI Mentor', icon: MessageCircle, roles: ['student', 'mentor', 'admin'] },
@@ -33,10 +42,24 @@ export function Sidebar({ activeTab, setActiveTab, user, role }: SidebarProps) {
   return (
     <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
       <div className="p-6 border-b border-gray-200">
-        <h1 className="text-2xl font-bold text-emerald-600 flex items-center gap-2">
-          <Briefcase className="w-6 h-6" />
-          PrepAI
-        </h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-emerald-600 flex items-center gap-2">
+            <Briefcase className="w-6 h-6" />
+            PrepAI
+          </h1>
+          <button
+            onClick={() => setActiveTab('home')}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black transition-all ${
+              streakCount > 0 
+                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm shadow-orange-500/20' 
+                : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+            }`}
+            title="Daily Prep Streak"
+          >
+            <Flame className={`w-3.5 h-3.5 ${streakCount > 0 ? 'fill-white text-white' : 'text-emerald-500'}`} />
+            <span>{streakCount}d</span>
+          </button>
+        </div>
         <p className="text-sm text-gray-500 mt-1">Student Placement & Training</p>
       </div>
       <nav className="flex-1 p-4 space-y-2">

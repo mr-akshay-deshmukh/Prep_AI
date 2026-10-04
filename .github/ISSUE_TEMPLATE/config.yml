@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 PrepAI Community Discussions
+    url: https://github.com/your-username/prepai/discussions
+    about: Ask questions, share ideas, and connect with other engineers preparing for interviews.
+  - name: 🔐 Security Vulnerability Reporting
+    url: mailto:engineeringstudies5@gmail.com
+    about: Privately report potential security vulnerabilities according to our Security Policy.

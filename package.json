@@ -1,8 +1,23 @@
 {
-  "name": "react-example",
+  "name": "prepai",
+  "version": "1.0.0",
+  "description": "An AI-powered platform for student placement and training, featuring interview practice, resume analysis, ATS resume building, daily streak rewards, and project roadmap generation.",
+  "license": "MIT",
   "private": true,
-  "version": "0.0.0",
   "type": "module",
+  "keywords": [
+    "ai",
+    "interview-preparation",
+    "placement-training",
+    "google-gemini",
+    "gemini-api",
+    "ats-resume-builder",
+    "streak-tracker",
+    "career-development",
+    "react-19",
+    "typescript",
+    "tailwindcss"
+  ],
   "scripts": {
     "dev": "tsx server.ts",
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",

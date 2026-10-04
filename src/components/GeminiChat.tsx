@@ -12,7 +12,7 @@ export function GeminiChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [model, setModel] = useState('gemini-3-flash-preview');
+  const [model, setModel] = useState('gemini-3.7-flash');
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const systemInstruction = "You are a Senior Director and Strategic Career Mentor. You help students and professionals with high-level career strategy, leadership development, and positioning themselves for impact. Be professional, direct, and insightful.";
@@ -38,7 +38,8 @@ export function GeminiChat() {
       setMessages(prev => [...prev, modelMessage]);
     } catch (error: any) {
       console.error("Chat error:", error);
-      setMessages(prev => [...prev, { role: 'model', content: "Sorry, I encountered an error. Please try again or check if you have reached a quota limit." }]);
+      const errorText = error?.message || "Sorry, I encountered an error. Please try again or check your API key in the API Configuration menu.";
+      setMessages(prev => [...prev, { role: 'model', content: `⚠️ ${errorText}` }]);
     } finally {
       setIsLoading(false);
     }
@@ -68,9 +69,9 @@ export function GeminiChat() {
             onChange={(e) => setModel(e.target.value)}
             className="text-sm border border-emerald-200 rounded-lg px-3 py-1.5 bg-white text-emerald-800 outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium"
           >
-            <option value="gemini-3-flash-preview">General (Flash)</option>
-            <option value="gemini-3.1-pro-preview">Complex Model</option>
-            <option value="gemini-3.1-flash-lite-preview">Fast (Lite)</option>
+            <option value="gemini-3.7-flash">Gemini 3.7 Flash</option>
+            <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro (Complex)</option>
+            <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash Lite</option>
           </select>
           <button 
             onClick={clearChat}

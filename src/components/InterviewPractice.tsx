@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-  import { Send, User, Bot, Loader2, Sparkles, CheckCircle, AlertCircle, BarChart, Quote, Zap, AlertTriangle, Star, MessageSquare, History, Plus, ArrowLeft, Mic, Square, Video, VideoOff, Lightbulb } from 'lucide-react';
+import { Send, User, Bot, Loader2, Sparkles, CheckCircle, AlertCircle, BarChart, Quote, Zap, AlertTriangle, Star, MessageSquare, History, Plus, ArrowLeft, Mic, Square, Video, VideoOff, Lightbulb } from 'lucide-react';
 import { sendChatMessage, generateStructuredFeedback } from '../lib/gemini';
+import { auth } from '../lib/firebase';
+import { recordTaskCompletion } from '../lib/streak';
 import Markdown from 'react-markdown';
 
 import { FLASHCARDS } from '../data/flashcards';
@@ -300,6 +302,9 @@ export function InterviewPractice() {
         role: 'model', 
         text: result.text 
       }]);
+
+      // Record daily streak engagement
+      recordTaskCompletion('interview_prep', auth.currentUser).catch(console.error);
     } catch (error) {
       console.error("Error sending message:", error);
       setMessages(prev => [...prev, { 

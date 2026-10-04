@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, MoreVertical, Calendar, Building2, MapPin, Trash2, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import { db, auth, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, addDoc, query, where, onSnapshot, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { recordTaskCompletion } from '../lib/streak';
 
 interface JobApplication {
   id: string;
@@ -53,6 +54,7 @@ export function JobTracker() {
       }
       
       await addDoc(collection(db, 'applications'), appData);
+      recordTaskCompletion('job_track', auth.currentUser).catch(console.error);
       setIsAdding(false);
       setNewApp({ company: '', role: '', location: '', priority: 'Medium', status: 'applied', dueDate: '' });
     } catch (error) {

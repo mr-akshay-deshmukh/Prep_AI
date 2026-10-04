@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { db, auth, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
+import { DailyStreakTracker } from './DailyStreakTracker';
+import { StreakAchievementBadges } from './StreakAchievementBadges';
+import { getStreakData, StreakState } from '../lib/streak';
 import {
   ResponsiveContainer,
   BarChart,
@@ -68,11 +71,20 @@ export function Home({ setActiveTab, role }: HomeProps) {
     avgClarity: 0,
     trend: [] as any[]
   });
+  const [streakData, setStreakData] = useState<StreakState>({
+    currentStreak: 0,
+    longestStreak: 0,
+    totalActiveDays: 0,
+    lastActiveDate: '',
+    activeDates: [],
+    todayCompletedTasks: []
+  });
 
-  // Monitor auth status
+  // Monitor auth status & streak data
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (usr) => {
       setCurrentUser(usr);
+      getStreakData(usr).then(setStreakData).catch(() => {});
     });
     return () => unsubscribe();
   }, []);
@@ -428,6 +440,25 @@ export function Home({ setActiveTab, role }: HomeProps) {
           <div className="absolute inset-0 bg-gradient-to-r from-emerald-900 via-emerald-900/40 to-transparent rounded-l-[4rem]"></div>
         </div>
       </div>
+
+      {/* Daily Streak Tracker Component */}
+      <DailyStreakTracker 
+        user={currentUser} 
+        setActiveTab={setActiveTab} 
+        onStreakUpdate={(newStreak) => {
+          setStreakData(prev => ({
+            ...prev,
+            currentStreak: newStreak,
+            longestStreak: Math.max(prev.longestStreak, newStreak)
+          }));
+        }}
+      />
+
+      {/* Achievement Badges & Milestone Rewards System */}
+      <StreakAchievementBadges 
+        streakData={streakData} 
+        onSelectTask={setActiveTab} 
+      />
 
       {/* Analytics & Progress Section */}
       <div className="bg-gray-50/50 rounded-[2.5rem] p-6 md:p-10 border border-gray-150 shadow-sm space-y-8" id="dashboard-progress-section">
